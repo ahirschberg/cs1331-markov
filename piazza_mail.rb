@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'mail'
+require 'pry'
 
 
 # time in seconds between pop3 email checks
@@ -24,7 +25,8 @@ class PiazzaStrings
   def get_mails()
     emails = Mail.find(:what => :first, count: 20, :order => :asc)
     relevant = filter_mails emails
-    parse_mails relevant
+    post_text = parse_mails relevant
+    extract_questions post_text
   end
 
   private
@@ -51,6 +53,21 @@ class PiazzaStrings
       end
     end
   end
+
+  def extract_questions(emails)
+    punct = "!?."
+    regex = /(?<=[#{punct}]|^)([^#{punct}]+?)(?=[?])/om
+    questions = emails.flat_map do |mail_element_arr|
+      if mail_element_arr.nil?
+        []
+      else
+        match = mail_element_arr.first.scan regex
+        match.map {|string_arr| string_arr.push("?").join}
+      end
+    end
+    questions
+  end
+
 end
 
 Thread::abort_on_exception = true
@@ -60,9 +77,10 @@ if __FILE__ == $0
 
   loop do 
     posts = piazza_strings.get_mails
+    p posts
     break if posts.empty?
 
-    filename = 'piazza.txt'
+    filename = 'Piazza.txt'
     puts "Writing #{posts.length} post(s) to #{filename}"
     File.open(filename, 'a') do |file|
       file << posts.join("\n\n\n")
