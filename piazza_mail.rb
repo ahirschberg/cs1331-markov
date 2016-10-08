@@ -22,7 +22,7 @@ class PiazzaStrings
   ## Also, the pop3 all mail setting seems not to stick (only affects first pull)
   ## So keep that in mind when debugging and getting no mail
   def get_mails()
-    emails = Mail.find(:what => :first, :count => 20, :order => :asc)
+    emails = Mail.find(:what => :first, count: 20, :order => :asc)
     relevant = filter_mails emails
     parse_mails relevant
   end
@@ -37,10 +37,8 @@ class PiazzaStrings
 
   def parse_mails(emails)
     if emails.empty?
-      print "."
       return []
     else
-      print "#{emails.length}"
       return emails.map do |mail|
         # pull out the post between the piazza boilerplate
         match = mail.body.decoded
@@ -60,18 +58,14 @@ Thread::abort_on_exception = true
 if __FILE__ == $0
   piazza_strings = PiazzaStrings.new
 
-  Thread.new do
-    while true
-      posts = piazza_strings.get_mails
-      unless posts.empty?
-        puts
-        filename = Time.now.strftime(MESSAGE_FILE_FMT)
-        puts "Writing #{posts.length} post(s) to #{filename}"
-        File.open(filename, 'w') do |file|
-          file << posts.join("\n\n\n")
-        end
-      end
-      sleep SLEEP_TIME
+  loop do 
+    posts = piazza_strings.get_mails
+    break if posts.empty?
+
+    filename = 'piazza.txt'
+    puts "Writing #{posts.length} post(s) to #{filename}"
+    File.open(filename, 'a') do |file|
+      file << posts.join("\n\n\n")
     end
-  end.join
+  end
 end
